@@ -169,6 +169,16 @@ public class MimeType {
         return null;
     }
 
+    public boolean supportsAlphaChannel() throws MimeException {
+        ImageMime imageMime = null;
+
+        imageMime = ImageMime.checkForExtension(this.fileExtension);
+        if (imageMime != null) {
+            return imageMime.supportsAlphaChannel();
+        }
+        return false;
+    }
+
     public boolean equals(Object obj) {
         if (obj != null && obj.getClass() == this.getClass()) {
             MimeType mimeObj = (MimeType) obj;

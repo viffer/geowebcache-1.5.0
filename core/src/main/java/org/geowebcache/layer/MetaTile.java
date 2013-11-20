@@ -18,7 +18,11 @@ package org.geowebcache.layer;
 
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -368,6 +372,20 @@ public class MetaTile implements TileResponseReceiver {
         Rectangle tileRegion = tiles[tileIdx];
         RenderedImage tile = createTile(tileRegion.x, tileRegion.y, tileRegion.width,
                 tileRegion.height);
+        if (this.formatModifier != null) {
+            try {
+                if (!this.getResponseFormat().supportsAlphaChannel() && tile.getColorModel().hasAlpha()) {
+                    ICC_Profile iccProfile = ICC_Profile.getInstance(ICC_ColorSpace.CS_sRGB);
+                    ColorSpace cSpace = new ICC_ColorSpace(iccProfile);
+                    ColorConvertOp op = new ColorConvertOp(tile.getColorModel().getColorSpace(), cSpace, null);
+                    BufferedImage fixedTile = new BufferedImage(tile.getWidth(), tile.getHeight(), BufferedImage.OPAQUE);
+                    op.filter((BufferedImage) tile, fixedTile);
+                    tile = fixedTile;
+                }
+            } catch (org.geowebcache.mime.MimeException e) {
+                log.error(e);
+            }
+        }
         disposeLater(tile);
         OutputStream outputStream = target.getOutputStream();
         ImageOutputStream imgOut = new MemoryCacheImageOutputStream(outputStream);
